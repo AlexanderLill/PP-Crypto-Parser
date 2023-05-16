@@ -2,10 +2,16 @@
 Parser for preparing trade data from kraken for Portfolio Performance
 
 ## Input
-Trade data from [kraken.com](https://kraken.com)
+- Ledger data from [kraken.com](https://kraken.com)
+- Historical cryptocurrency prices from Portfolio Performance
 
 ## Output
-CSV file compatible with the CSV import of [Portfolio Performance (PP)](https://www.portfolio-performance.info/)
+- CSV file compatible with the CSV import of [Portfolio Performance (PP)](https://www.portfolio-performance.info/)
+
+## How does it work?
+This parser needs the ledger data exported from Kraken as well as the historical prices of the cryptocurrencies exported from Portfolio Performance. It then groups the transactions from Kraken by ID (e.g. one transaction with ID 123 receiving Bitcoin, and another transaction with the same ID that is spending Euros). For calculating the value of transactions in Euros, the historical prices from Portfolio Performance are used, so that no additional API needs to be implemented. This parser outputs three CSV files, which can then be imported into Portfolio Performance - one file is for all account transactions (e.g. deposits/withdrawals in Euros), one for all depot transactions (e.g. buying Bitcoin) and the last one for staking rewards (which are currently implemented as deposits of the staked currency).
+
+Detailed examples of how the input looks like, and how the generated output looks like, can be found in `src/test/process_ledger_test.py`.
 
 ## Comments
 - Project is a Work-in-Progress (WIP)
@@ -64,3 +70,16 @@ Example:
 ```
 python cli.py -fc 'EUR' -o './output/' -v './input/Alle_historischen_Kurse.csv' './input/ledgers.csv' -cm '{"XBT-EUR": "BTC-EUR"}'
 ```
+
+## Details for Importing Files into Portfolio Performance
+
+### transactions_account.csv
+![](./doc/account_transactions.png)
+
+### transactions_normal_depot.csv
+![](./doc/depot_transactions_normal.png)
+
+### transactions_special_depot.csv
+![](./doc/depot_transactions_special.png)
+And do not forget to check the following box to import staking rewards as "deposits":
+![](./doc/depot_transactions_special2.png)
