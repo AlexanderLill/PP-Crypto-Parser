@@ -22,12 +22,12 @@ parser.add_argument('-cm', '--currency-mapping', dest='currency_mapping', type=j
 ### Ledger Processor
 parser.add_argument('kraken_csv_file', metavar='KRAKEN_CSV_FILE', type=str, nargs='?',
                     help='kraken ledger export csv file')
-parser.add_argument('-fc', '--fiat-currency', dest="fiat_currency", help='define base currency', default='EUR')
+parser.add_argument('-fc', '--fiat-currency', dest="fiat_currency", help='define base currency (def=EUR)', default='EUR')
 parser.add_argument('-ir', '--ignore-refids', dest='refids_to_ignore', type=str, help="Comma-separated list of refids to ignore while processing", default="")
-parser.add_argument('-o', '--out-dir', dest='out_dir', type=str, help='Directory to store PP transactions in', default='.')
-parser.add_argument('-do', '--depot-old', dest='depot_old', type=str, help="Name of current/old depot", default="DEPOT")
-parser.add_argument('-dn', '--depot-new', dest='depot_new', type=str, help="Name of new depot (target of transfers)", default="DEPOT_NEW")
-parser.add_argument('-a', '--account', dest='account', type=str, help="Name of account", default="ACCOUNT")
+parser.add_argument('-o', '--out-dir', dest='out_dir', type=str, help='Directory to store PP transactions in (def=cwd)', default='.')
+parser.add_argument('-do', '--depot-old', dest='depot_old', type=str, help="Name of current/old depot (def=DEPOT)", default="DEPOT")
+parser.add_argument('-dn', '--depot-new', dest='depot_new', type=str, help="Name of new depot (target of transfers, def=DEPOT_NEW)", default="DEPOT_NEW")
+parser.add_argument('-a', '--account', dest='account', type=str, help="Name of account, def=ACCOUNT", default="ACCOUNT")
 parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='Activate verbose mode')
 
 args = parser.parse_args()
