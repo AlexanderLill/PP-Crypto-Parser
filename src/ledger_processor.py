@@ -328,7 +328,10 @@ class LedgerProcessor:
                 fee_crypto = tcrypto["fee"]
         
         if isinstance(fiat_amount, numbers.Number) and isinstance(fee_fiat, numbers.Number):
-            total = fiat_amount + fee_fiat
+            if is_buy_transaction:
+                total = fiat_amount + fee_fiat
+            else:
+                total = fiat_amount - fee_fiat
         elif isinstance(fiat_amount, numbers.Number):
             total = fiat_amount
         else:

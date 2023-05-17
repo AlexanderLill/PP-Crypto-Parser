@@ -140,6 +140,30 @@ class LedgerProcessorTest(unittest.TestCase):
             result_csv = result_csv + t.to_csv() + "\n"
 
         self.assertEquals(result_csv, expected_depot_csv)
+
+    def test_import_sell(self):
+        kraken_csv = dedent("""
+        "txid","refid","time","type","subtype","aclass","asset","amount","fee","balance"
+        "LFAVC7-TR6BH-KQMRMG","TDT7NF-OITYA-C2V7KD","2021-01-02 19:14:00","trade","","currency","XXBT",-0.0041520000,0.0000000000,0.0000011800
+        "L4Q26U-35JVG-EJGUOR","TDT7NF-OITYA-C2V7KD","2021-01-02 19:14:00","trade","","currency","ZEUR",110.4427,0.28716,9183.4334
+        """)
+
+        expected_depot_csv = dedent("""
+        2021-01-02;19:14:00;Verkauf;XBT;0,004152;26.599,879576;110,442700;0,287160;;110,155540;DEPOT;ACCOUNT;TDT7NF-OITYA-C2V7KD,L4Q26U-35JVG-EJGUOR,LFAVC7-TR6BH-KQMRMG;
+        """)
+
+        df = pd.read_csv(StringIO(kraken_csv))
+        
+        lp = LedgerProcessor(dataframe=df, depot_current=self.DEPOT_CURRENT, depot_new=self.DEPOT_NEW, account=self.ACCOUNT)
+        transactions = lp.get_transactions()
+
+        dt = transactions["depot_normal_transactions"]
+
+        result_csv = "\n"
+        for t in dt:
+            result_csv = result_csv + t.to_csv() + "\n"
+
+        self.assertEquals(result_csv, expected_depot_csv)
     
     def test_import_spend_receive(self):
         kraken_csv = dedent("""
