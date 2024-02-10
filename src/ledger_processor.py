@@ -638,12 +638,17 @@ class LedgerProcessor:
     def __is_staking_transfer(self, transaction):
         for t in transaction.get("raw", []):
             subtype = t.get("subtype", "")
-            if subtype == "spotfromfutures" or subtype == "spottostaking" or subtype == "stakingfromspot":
+            if subtype == "spotfromfutures" or \
+                subtype == "spottostaking" or \
+                subtype == "stakingfromspot" or \
+                subtype == "stakingtospot" or \
+                subtype == "spotfromstaking":
                 return True
         return False
 
     def __print_transaction_debug_info(self, message, transaction):
         print(message + "-".join(list(set(transaction.get("types", [])))) + " info: " + transaction.get("meta", {}).get("parsing_info", ""))
+        print(json.dumps(transaction))
 
     def _process_transaction(self, transaction_id, transaction):
 
@@ -671,6 +676,8 @@ class LedgerProcessor:
             else:
                 self.__print_transaction_debug_info("Can't process case: ", transaction)
                 return [], []
+        elif transaction.get("meta", {}).get("parsing_info", "") == "nondup" and set(transaction.get("types", [])) == {"withdrawal"}:
+            return self._process_fiat_withdrawal(transaction_id, transaction)
         else:
             self.__print_transaction_debug_info("Can't process case: ", transaction)
             return [], []
@@ -745,6 +752,7 @@ class LedgerProcessor:
             etype = entry["type"]
             txid = entry["txid"]
             time = entry["time"]
+            date = entry["Date"]
             
             asset = entry["asset"]
             amount = entry["amount"]
@@ -759,6 +767,7 @@ class LedgerProcessor:
                 other_etype = other_entry["type"]
                 other_txid = other_entry["txid"]
                 other_time = other_entry["time"]
+                other_date = other_entry["Date"]
 
                 if refid == other_refid and txid == other_txid and etype == other_etype and time == other_time:
                     # Skip same entry
@@ -767,7 +776,7 @@ class LedgerProcessor:
                 other_asset = other_entry["asset"]
                 other_amount = other_entry["amount"]
 
-                if asset == other_asset and amount == other_amount:
+                if asset == other_asset and amount == other_amount and date == other_date:
 
                     # TODO: Could additionally check for transactions within a few minutes
 
