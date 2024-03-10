@@ -28,7 +28,7 @@ class LedgerProcessor:
 
         if dataframe is None:
             if filename is None:
-                raise IllegalArgumentError("Either filename or datafram needs to be specified!")
+                raise IllegalArgumentError("Either filename or dataframe needs to be specified!")
             dataframe = pd.read_csv(filename, sep=csv_sep)
 
         self._df = dataframe
@@ -414,34 +414,18 @@ class LedgerProcessor:
 
         """
         {
-            "Date": "2021-01-22",
-            "Time": "11:02:47",
-            "WKN": "ZEUR",
-            "aclass": "currency",
-            "amount": -12000.0,
-            "asset": "ZEUR",
-            "balance": NaN,
-            "fee": 0.09,
-            "refid": "ACC3OMW-HGUTIZ-YWRQ5G",
-            "subtype": NaN,
-            "time": "2021-01-22 11:02:47",
-            "txid": NaN,
-            "type": "withdrawal"
-        },
-        {
-            "Date": "2021-01-22",
-            "Time": "11:05:43",
-            "WKN": "ZEUR",
-            "aclass": "currency",
-            "amount": -12000.0,
-            "asset": "ZEUR",
-            "balance": 2118.2448,
-            "fee": 0.09,
-            "refid": "ACC3OMW-HGUTIZ-YWRQ5G",
-            "subtype": NaN,
-            "time": "2021-01-22 11:05:43",
-            "txid": "LLMXLS-24H3J-YIAPGT",
-            "type": "withdrawal"
+            'txid': 'LHXLZ6-GJHOM-LWBXPR'
+            'refid': 'FTLn8NT-Nwp5SHbaVhOwuQeZXkeBBc'
+            'time': '2024-01-26 22:35:17'
+            'type': 'withdrawal'
+            'subtype': ''
+            'aclass': 'currency'
+            'asset': 'ZEUR'
+            'amount': -13.51
+            'fee': 0.09
+            'balance': 0.0014
+            'Date': '2024-01-26'
+            'Time': '22:35:17'
         }
         """
 
