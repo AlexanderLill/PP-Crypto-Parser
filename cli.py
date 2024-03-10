@@ -27,8 +27,9 @@ parser.add_argument('-ir', '--ignore-refids', dest='refids_to_ignore', type=str,
 parser.add_argument('-o', '--out-dir', dest='out_dir', type=str, help='Directory to store PP transactions in (def=cwd)', default='.')
 parser.add_argument('-do', '--depot-old', dest='depot_old', type=str, help="Name of current/old depot (def=DEPOT)", default="DEPOT")
 parser.add_argument('-dn', '--depot-new', dest='depot_new', type=str, help="Name of new depot (target of transfers, def=DEPOT_NEW)", default="DEPOT_NEW")
-parser.add_argument('-a', '--account', dest='account', type=str, help="Name of account, def=ACCOUNT", default="ACCOUNT")
+parser.add_argument('-a', '--account', dest='account', type=str, help="Name of account (def=ACCOUNT)", default="ACCOUNT")
 parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='Activate verbose mode')
+parser.add_argument('-l', '--language', dest='language', type=str, help='Language for output (en/de, def=de)', default='de')
 
 args = parser.parse_args()
 
@@ -48,7 +49,8 @@ lp = LedgerProcessor(filename=args.kraken_csv_file,
                      refids_to_ignore=args.refids_to_ignore,
                      depot_current=args.depot_old,
                      depot_new=args.depot_new,
-                     account=args.account)
+                     account=args.account,
+                     language=args.language)
 
 lp.store_depot_normal_transactions(f"{args.out_dir}/transactions_normal_depot.csv")
 lp.store_depot_special_transactions(f"{args.out_dir}/transactions_special_depot.csv")

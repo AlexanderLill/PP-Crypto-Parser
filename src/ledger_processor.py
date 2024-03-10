@@ -5,6 +5,7 @@ LedgerProcessor module
 Copyright 2022-05-16 AlexanderLill
 """
 from src.transactions import DepotTransaction, AccountTransaction
+from .i18n.i18n import I18n
 
 import json
 import numbers
@@ -19,17 +20,24 @@ class LedgerProcessor:
     DEPOT_NORMAL_TRANSACTIONS = "depot_normal_transactions"
     DEPOT_SPECIAL_TRANSACTIONS = "depot_special_transactions"
 
-    DEPOT_CSV_HEADER = "Datum;Uhrzeit;Typ;Wertpapier;Stück;Kurs;Betrag;Gebühren;Steuern;Gesamtpreis;Konto;Gegenkonto;Notiz;Quelle"
-    ACCOUNT_CSV_HEADER = "Datum;Uhrzeit;Typ;Betrag;Saldo;Wertpapier;Stück;pro Aktie;Gegenkonto;Notiz;Quelle"
-
     def __init__(self, filename=None, csv_sep=",", dataframe=None,
                  fiat_currency="EUR", rate_provider=None, refids_to_ignore="",
-                 depot_current="", depot_new="", account=""):
+                 depot_current="", depot_new="", account="", language="de"):
 
         if dataframe is None:
             if filename is None:
                 raise IllegalArgumentError("Either filename or dataframe needs to be specified!")
             dataframe = pd.read_csv(filename, sep=csv_sep)
+        
+        self._i18n = I18n(language)
+        # shortcuts for i18n values
+        self.DELIVERY_INBOUND = self._i18n.get("portfolio.DELIVERY_INBOUND")
+        self.BUY = self._i18n.get("portfolio.BUY")
+        self.SELL = self._i18n.get("account.SELL")
+        self.FEES = self._i18n.get("account.FEES")
+
+        self._depot_csv_header = ";".join(self._i18n.get("DEPOT_COLUMNS"))
+        self._account_csv_header = ";".join(self._i18n.get("ACCOUNT_COLUMNS"))
 
         self._df = dataframe
         self._fiat_currency = fiat_currency
@@ -92,25 +100,28 @@ class LedgerProcessor:
 
     def store_depot_normal_transactions(self, output_filename):
         transactions = self.get_transactions().get(self.DEPOT_NORMAL_TRANSACTIONS, [])
-        csv_output = self.DEPOT_CSV_HEADER + self._generate_csv_from(transactions)
+        csv_output = self._depot_csv_header + self._generate_csv_from(transactions)
 
         with open(output_filename, "w") as file:
             file.write(csv_output)
     
     def store_depot_special_transactions(self, output_filename):
         transactions = self.get_transactions().get(self.DEPOT_SPECIAL_TRANSACTIONS, [])
-        csv_output = self.DEPOT_CSV_HEADER + self._generate_csv_from(transactions)
+        csv_output = self._depot_csv_header + self._generate_csv_from(transactions)
 
-        # This is necessary as "Einliefung" is not supported by PP CSV Import
-        # During the import in PP check the box to transform buys into "Einlieferungen" (see README.md)
-        csv_output = csv_output.replace(";Einlieferung;", ";Kauf;")
+        # This is necessary as inbound deliveries are not supported by PP CSV Import
+        # During the import in PP check the box to transform buys into inbound deliveries (see README.md)
+        csv_output = csv_output.replace(
+            f";{self.DELIVERY_INBOUND};",
+            f";{self.BUY};"
+        )
 
         with open(output_filename, "w") as file:
             file.write(csv_output)
     
     def store_account_transactions(self, output_filename):
         transactions = self.get_transactions().get(self.ACCOUNT_TRANSACTIONS, [])
-        csv_output = self.ACCOUNT_CSV_HEADER + self._generate_csv_from(transactions)
+        csv_output = self._account_csv_header + self._generate_csv_from(transactions)
 
         with open(output_filename, "w") as file:
             file.write(csv_output)
@@ -155,7 +166,7 @@ class LedgerProcessor:
 
         lt = raw_transactions[0]
 
-        at = AccountTransaction(lt["Date"], lt["Time"], "Einlage", lt["amount"], note=note_ids)
+        at = AccountTransaction(lt["Date"], lt["Time"], self._i18n.get("account.DEPOSIT"), lt["amount"], note=note_ids)
 
         return [at], []
     
@@ -215,7 +226,7 @@ class LedgerProcessor:
 
         dt = DepotTransaction(date,
                               time,
-                              "Einlieferung",
+                              self.DELIVERY_INBOUND,
                               asset_normalized,
                               lt["amount"],
                               rate,
@@ -337,7 +348,7 @@ class LedgerProcessor:
         else:
             total = 0.0
         
-        transaction_type = "Kauf" if is_buy_transaction else "Verkauf"
+        transaction_type = self.BUY if is_buy_transaction else self.SELL
 
         if fee_crypto != "":
             fee_value = round(fee_crypto * rate, 8)
@@ -368,7 +379,7 @@ class LedgerProcessor:
 
             sellt = DepotTransaction(date,
                                     time,
-                                    "Verkauf",
+                                    self.SELL,
                                     crypto_currency,
                                     fee_crypto,
                                     rate,
@@ -383,7 +394,7 @@ class LedgerProcessor:
         
             costt = AccountTransaction(date,
                                     time,
-                                    "Gebühren",
+                                    self.FEES,
                                     fee_value,
                                     "",
                                     crypto_currency,
@@ -435,8 +446,8 @@ class LedgerProcessor:
 
         abs_amount = self.__get_abs_amount(lt["amount"])
 
-        withdrawal = AccountTransaction(lt["Date"], lt["Time"], "Entnahme", abs_amount, "", "", "", "", "", note_ids)
-        fees = AccountTransaction(lt["Date"], lt["Time"], "Gebühren", float(lt["fee"]), "", "", "", "", "", note_ids)
+        withdrawal = AccountTransaction(lt["Date"], lt["Time"], self._i18n.get("account.REMOVAL"), abs_amount, "", "", "", "", "", note_ids)
+        fees = AccountTransaction(lt["Date"], lt["Time"], self.FEES, float(lt["fee"]), "", "", "", "", "", note_ids)
 
         return [withdrawal, fees], []
 
@@ -507,7 +518,7 @@ class LedgerProcessor:
 
         transfert = DepotTransaction(date,
                                      time,
-                                     "Umbuchung (Ausgang)",
+                                     self._i18n.get("account.TRANSFER_OUT"),
                                      asset_normalized,
                                      transaction_amount,
                                      rate,
@@ -521,7 +532,7 @@ class LedgerProcessor:
         
         sellt = DepotTransaction(date,
                                  time,
-                                 "Verkauf",
+                                 self.SELL,
                                  asset_normalized,
                                  transaction_fee,
                                  rate,
@@ -536,7 +547,7 @@ class LedgerProcessor:
         
         costt = AccountTransaction(date,
                                    time,
-                                   "Gebühren",
+                                   self.FEES,
                                    fee_total,
                                    "",
                                    asset_normalized,
@@ -604,7 +615,7 @@ class LedgerProcessor:
 
         dt = DepotTransaction(date,
                               time,
-                              "Einlieferung",
+                              self.DELIVERY_INBOUND,
                               asset_normalized,
                               lt["amount"],
                               rate,
@@ -669,8 +680,8 @@ class LedgerProcessor:
     def get_transactions(self):
 
         account_transactions = self.account_transactions
-        depot_normal_transactions = list(filter(lambda t: t.type != "Einlieferung", self.depot_transactions))
-        depot_special_transactions = list(filter(lambda t: t.type == "Einlieferung", self.depot_transactions))
+        depot_normal_transactions = list(filter(lambda t: t.type != self.DELIVERY_INBOUND, self.depot_transactions))
+        depot_special_transactions = list(filter(lambda t: t.type == self.DELIVERY_INBOUND, self.depot_transactions))
 
         return {
             self.ACCOUNT_TRANSACTIONS: account_transactions,

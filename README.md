@@ -39,8 +39,8 @@ Detailed examples of how the input looks like, and how the generated output look
 ## Command Line Arguments
 ```
 cli.py -h                                          
-usage: cli.py [-h] [-cm CURRENCY_MAPPING] [-fc FIAT_CURRENCY] [-ir REFIDS_TO_IGNORE] [-o OUT_DIR] [-do DEPOT_OLD] [-dn DEPOT_NEW] [-a ACCOUNT] [-v]
-              [PP_RATES_FILE] [KRAKEN_CSV_FILE]
+usage: cli.py [-h] [-cm CURRENCY_MAPPING] [-fc FIAT_CURRENCY] [-ir REFIDS_TO_IGNORE] [-o OUT_DIR] [-do DEPOT_OLD] [-dn DEPOT_NEW] [-a ACCOUNT]
+          [-v] [-l LANGUAGE] [PP_RATES_FILE] [KRAKEN_CSV_FILE]
 
 Parse Kraken Crypto Transactions for Portfolio Performance Import.
 
@@ -64,6 +64,8 @@ options:
   -a ACCOUNT, --account ACCOUNT
                         Name of account, def=ACCOUNT
   -v, --verbose         Activate verbose mode
+  -l LANGUAGE, --language LANGUAGE
+                        Language for output (en/de, def=de)
 ```
 
 Example:
