@@ -32,7 +32,7 @@ class LedgerProcessor:
         self._i18n = I18n(language)
         # shortcuts for i18n values
         self.DELIVERY_INBOUND = self._i18n.get("portfolio.DELIVERY_INBOUND")
-        self.BUY = self._i18n.get("portfolio.BUY")
+        self.BUY = self._i18n.get("account.BUY")
         self.SELL = self._i18n.get("account.SELL")
         self.FEES = self._i18n.get("account.FEES")
 

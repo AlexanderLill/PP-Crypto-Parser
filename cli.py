@@ -39,7 +39,8 @@ if args.verbose:
 if args.pp_rates_file:
     rate_provider = PortfolioPerformanceRateProvider(args.pp_rates_file,
                                                      currency_mapping=args.currency_mapping,
-                                                     fiat_currency=args.fiat_currency)
+                                                     fiat_currency=args.fiat_currency,
+                                                     language=args.language)
 else:
     rate_provider = None
 

@@ -9,11 +9,19 @@ import pandas as pd
 import locale
 
 class PortfolioPerformanceRateProvider:
-    def __init__(self, export_file, fiat_currency="EUR", time_format="%Y-%m-%d %H:%M:%S", currency_mapping=None):
+    def __init__(self, export_file, fiat_currency="EUR", time_format="%Y-%m-%d %H:%M:%S", language="de", currency_mapping=None):
+        if language == "de":
+            self._thousands = "."
+            self._decimal = ","
+            self._sep = ";"
+        if language == "en":
+            self._thousands = ","
+            self._decimal = "."
+            self._sep = ","
         self._export_file = export_file
         self._fiat_currency = fiat_currency
         self._time_format = time_format
-        self.__df = pd.read_csv(export_file, sep=";", index_col=0, parse_dates=[0])
+        self.__df = pd.read_csv(export_file, sep=self._sep, index_col=0, parse_dates=[0], thousands=self._thousands, decimal=self._decimal)
         if currency_mapping is not None:
             self.__df.rename(columns=currency_mapping, inplace=True)
         locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')  # TODO: Cleanup locale stuff
@@ -39,6 +47,7 @@ class PortfolioPerformanceRateProvider:
         else:
             raise ValueError(f'Could not find rate for currency {column_name} in export loaded from {self._export_file}\nFound columns: ' + "\n".join(self.__df.columns))
 
-        rate = rate.replace(".", "")  # Need to remove thousands-sep, locale stuff does not work ... 15.426,75
-
-        return locale.atof(rate)
+        # TODO: Cleanup locale stuff
+        # rate = rate.replace(self._thousands, "")  # Need to remove thousands-sep, locale stuff does not work ... 15.426,75
+        # return locale.atof(rate)
+        return rate
