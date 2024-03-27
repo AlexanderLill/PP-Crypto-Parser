@@ -10,14 +10,14 @@ import locale
 
 class PortfolioPerformanceRateProvider:
     def __init__(self, export_file, fiat_currency="EUR", time_format="%Y-%m-%d %H:%M:%S", language="de", currency_mapping=None):
-        if language == "de":
-            self._thousands = "."
-            self._decimal = ","
-            self._sep = ";"
         if language == "en":
             self._thousands = ","
             self._decimal = "."
             self._sep = ","
+        else:
+            self._thousands = "."
+            self._decimal = ","
+            self._sep = ";"
         self._export_file = export_file
         self._fiat_currency = fiat_currency
         self._time_format = time_format
