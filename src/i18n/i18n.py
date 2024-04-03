@@ -1,3 +1,6 @@
+import os
+i18n_dir = os.path.dirname(os.path.abspath(__file__))
+
 class I18n:
 
     CSV_DEPOT_COLUMNS = [
@@ -37,17 +40,18 @@ class I18n:
         self._constants['DEPOT_COLUMNS'] = self.translate_array(self.CSV_DEPOT_COLUMNS)
         self._constants['ACCOUNT_COLUMNS'] = self.translate_array(self.CSV_ACCOUNT_COLUMNS)
 
+        print(f"Folder for translation files: {i18n_dir}")
+
     def get(self, key):
         return self._constants.get(key, key)
 
     def load_language(self, language):
         result = {}
 
-        prefix = "src/i18n"
         files = [
-            f"{prefix}/labels_{language}.properties",  # original file taken from original portfolio performance
-            f"{prefix}/messages_{language}.properties",  # original file taken from original portfolio performance
-            f"{prefix}/extra_{language}.properties",  # this file includes missing translations from other files
+            os.path.join(i18n_dir, f"labels_{language}.properties"),
+            os.path.join(i18n_dir, f"messages_{language}.properties"),
+            os.path.join(i18n_dir, f"extra_{language}.properties"),  # TODO: Avoid manual prep for `extra` file.
         ]
         for f in files:
             result.update(self.load_from_file(f))
