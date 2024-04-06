@@ -5,7 +5,7 @@ LedgerProcessor module
 Copyright 2022-05-16 AlexanderLill
 """
 from src.transactions import DepotTransaction, AccountTransaction
-from .i18n.i18n import I18n
+from .i18n import I18n
 
 import json
 import numbers

@@ -1,0 +1,3 @@
+[submodule "resources/portfolio"]
+	path = resources/portfolio
+	url = https://github.com/portfolio-performance/portfolio.git

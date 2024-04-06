@@ -16,6 +16,9 @@ Detailed examples of how the input looks like, and how the generated output look
 ## Comments
 - Project is a Work-in-Progress (WIP)
 
+## Supported Portfolio Performance Languages
+The list of supported languages can be found by checking which `messages_$LANG.properties` files exist here: https://github.com/portfolio-performance/portfolio/tree/master/name.abuchen.portfolio/src/name/abuchen/portfolio
+
 ## Step-by-step
 1. Export all `ledger` data from kraken
     1. On the kraken website, choose `History` in the top menu, then `Export`
@@ -25,12 +28,13 @@ Detailed examples of how the input looks like, and how the generated output look
 2. Export all history crypto rates from Portfolio Performance (PP)
     1. In PP, choose `File` - `Export` - `CSV...`
     2. Scroll to the bottom and choose `Securities` - `All historic rates` and choose storage location
-3. Run `cli.py` with the following parameters (see `cli.py` for help)
+3. Run `git submodule init` to download the code of Portfolio Performance (necessary for translation files). The list of supported languages can be found by checking which `messages_$LANG.properties` files exist here: https://github.com/portfolio-performance/portfolio/tree/master/name.abuchen.portfolio/src/name/abuchen/portfolio
+4. Run `cli.py` with the following parameters (see `cli.py` for help)
     - `PP_RATES_FILE` historical rates file exported from PP (required)
     - `KRAKEN_CSV_FILE` kraken ledger export (required)
     - optional parameters (see section "Command Line Arguments")
         - `-cm` can be used to specify mapping between PP Symbol and Kraken crypto currency abbreviation if they differ
-4. Import the generated CSV files in Portfolio Performance
+5. Import the generated CSV files in Portfolio Performance
     - Import `transactions_account.csv` as account data (it includes deposits and withdrawals and costs for transfers)
     - Import `transactions_normal_depot.csv` as transaction data (it includes buying and seeling cryptocurrencies)
     - Import `transactions_special_depot.csv` as transaction data and **check the box to transform them to transfers instead of buys**
