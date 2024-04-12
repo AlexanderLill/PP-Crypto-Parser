@@ -642,43 +642,44 @@ class LedgerProcessor:
         return False
 
     def __print_transaction_debug_info(self, message, transaction):
-        print(message + "-".join(list(set(transaction.get("types", [])))) + " info: " + transaction.get("meta", {}).get("parsing_info", ""))
+        print(message + ", detailed transaction:")
         print(json.dumps(transaction))
 
     def _process_transaction(self, transaction_id, transaction):
+        parsing_info = transaction.get("meta", {}).get("parsing_info", "")
+        transaction_types = set(transaction.get("types", []))
 
-        if transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"deposit"}:
+        if parsing_info == "dup" and transaction_types == {"deposit"}:
             return self._process_deposit(transaction_id, transaction)
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"withdrawal"}:
+        elif parsing_info == "dup" and transaction_types == {"withdrawal"}:
             return self._process_withdrawal(transaction_id, transaction)
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"trade"}:
+        elif parsing_info == "dup" and transaction_types == {"trade"}:
             return self._process_trade(transaction_id, transaction)
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"spend","receive"}:
+        elif parsing_info == "dup" and transaction_types == {"spend","receive"}:
             return self._process_trade(transaction_id, transaction)
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup_asset_amount_match" and set(transaction.get("types", [])) == {"deposit","staking"}:
+        elif parsing_info == "dup_asset_amount_match" and transaction_types == {"deposit","staking"}:
             return self._process_staking(transaction_id, transaction)
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"transfer", "withdrawal"}:
+        elif parsing_info == "dup" and transaction_types == {"transfer", "withdrawal"}:
             if self.__is_staking_transfer(transaction):
-                print("Ignoring staking transfer...")
+                print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
                 return [], []
             else:
-                self.__print_transaction_debug_info("Can't process case: ", transaction)
+                self.__print_transaction_debug_info(f"Can't process unknown case [DTW-NS] ({parsing_info}, {transaction_types})", transaction)
                 return [], []
-        elif transaction.get("meta", {}).get("parsing_info", "") == "dup" and set(transaction.get("types", [])) == {"deposit", "transfer"}:
+        elif parsing_info == "dup" and transaction_types == {"deposit", "transfer"}:
             if self.__is_staking_transfer(transaction):
-                print("Ignoring staking transfer...")
+                print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
                 return [], []
             else:
-                self.__print_transaction_debug_info("Can't process case: ", transaction)
+                self.__print_transaction_debug_info(f"Can't process unknown case [DDT-NS] ({parsing_info}, {transaction_types}): ", transaction)
                 return [], []
-        elif transaction.get("meta", {}).get("parsing_info", "") == "nondup" and set(transaction.get("types", [])) == {"withdrawal"}:
+        elif parsing_info == "nondup" and transaction_types == {"withdrawal"}:
             return self._process_fiat_withdrawal(transaction_id, transaction)
         else:
-            self.__print_transaction_debug_info("Can't process case: ", transaction)
+            self.__print_transaction_debug_info(f"Can't process unknown case [ELSE] ({parsing_info}, {transaction_types})", transaction)
             return [], []
     
     def get_transactions(self):
-
         account_transactions = self.account_transactions
         depot_normal_transactions = list(filter(lambda t: t.type != self.DELIVERY_INBOUND, self.depot_transactions))
         depot_special_transactions = list(filter(lambda t: t.type == self.DELIVERY_INBOUND, self.depot_transactions))
@@ -704,7 +705,6 @@ class LedgerProcessor:
         self.depot_transactions = depot_transactions
 
     def _parse_transactions(self):
-
         df = self._df
         df = df.fillna("")
         df = df.apply(LedgerProcessor.__create_dateandtime, axis=1)
