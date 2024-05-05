@@ -277,8 +277,9 @@ class LedgerProcessor:
         tfiat_transactions = list(filter(lambda t: self.__are_same_currency(t["asset"], self._fiat_currency), raw_transactions))
         tcrypto_transactions = list(filter(lambda t: not self.__are_same_currency(t["asset"], self._fiat_currency), raw_transactions))
 
-        assert len(tfiat_transactions) == 1, "too many transactions found!"
-        assert len(tcrypto_transactions) == 1, "too many transactions found!"
+        if len(tfiat_transactions) != 1 or len(tcrypto_transactions) != 1:
+            self.__print_transaction_debug_info("Trade does not consist of 1 fiat and 1 crypto transaction, skipping...", transaction)
+            return [], []
 
         tfiat = tfiat_transactions[0]
         tcrypto = tcrypto_transactions[0]
@@ -375,6 +376,7 @@ class LedgerProcessor:
         
         depot_transactions.append(dt)
     
+        # If there is a fee, we create a sell transaction, and a cost transaction with same amount.
         if fee_crypto != "":
 
             sellt = DepotTransaction(date,
@@ -642,23 +644,30 @@ class LedgerProcessor:
         return False
 
     def __print_transaction_debug_info(self, message, transaction):
-        print(message + ", detailed transaction:")
-        print(json.dumps(transaction))
+        print(message + ", detailed transaction:", json.dumps(transaction))
 
     def _process_transaction(self, transaction_id, transaction):
         parsing_info = transaction.get("meta", {}).get("parsing_info", "")
         transaction_types = set(transaction.get("types", []))
 
-        if parsing_info == "dup" and transaction_types == {"deposit"}:
+        if parsing_info in ["dup", "nondup"] and transaction_types == {"deposit"}:
             return self._process_deposit(transaction_id, transaction)
         elif parsing_info == "dup" and transaction_types == {"withdrawal"}:
             return self._process_withdrawal(transaction_id, transaction)
-        elif parsing_info == "dup" and transaction_types == {"trade"}:
+        elif parsing_info in ["dup", "nondup"] and transaction_types == {"trade"}:
             return self._process_trade(transaction_id, transaction)
         elif parsing_info == "dup" and transaction_types == {"spend","receive"}:
             return self._process_trade(transaction_id, transaction)
         elif parsing_info == "dup_asset_amount_match" and transaction_types == {"deposit","staking"}:
             return self._process_staking(transaction_id, transaction)
+        elif parsing_info == "nondup" and transaction_types == {"staking"}:
+            return self._process_staking(transaction_id, transaction)
+        elif parsing_info == "nondup" and transaction_types == {"earn"}:
+            return self._process_staking(transaction_id, transaction)
+        elif parsing_info == "nondup" and transaction_types == {"transfer"}:
+            if self.__is_staking_transfer(transaction):
+                print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
+                return [], []
         elif parsing_info == "dup" and transaction_types == {"transfer", "withdrawal"}:
             if self.__is_staking_transfer(transaction):
                 print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
@@ -676,8 +685,12 @@ class LedgerProcessor:
         elif parsing_info == "nondup" and transaction_types == {"withdrawal"}:
             return self._process_fiat_withdrawal(transaction_id, transaction)
         else:
-            self.__print_transaction_debug_info(f"Can't process unknown case [ELSE] ({parsing_info}, {transaction_types})", transaction)
-            return [], []
+            if parsing_info == "dup_asset_amount_match":
+                self.__print_transaction_debug_info(f"Can't process unknown case, but could be false positive [FP] ({parsing_info}, {transaction_types})", transaction)
+                return [], []
+            else:
+                self.__print_transaction_debug_info(f"Can't process unknown case [ELSE] ({parsing_info}, {transaction_types})", transaction)
+                return [], []
     
     def get_transactions(self):
         account_transactions = self.account_transactions
@@ -741,7 +754,43 @@ class LedgerProcessor:
             transactions[refid]["types"].append(etype)
             transactions[refid]["meta"]["parsing_info"] = "dup"
 
-        nondups_to_process = list(filter(lambda item: item["refid"] not in refid_dups, raw_ledger))
+        # Process transactions classified as dups which have a missing refid
+        unknown_nondups = []
+        if "Unknown" in transactions:
+            unknown_transactions = transactions["Unknown"]
+            del transactions["Unknown"]
+
+            # unknown_dups can be ignored, they are transactions that add and subtract same amount of same asset
+            # let's search for unknown nondups, which are real transactions with wrong refid due to a Kraken bug.
+
+            unknown_df = pd.DataFrame(unknown_transactions.get("raw", []))
+            unknown_df["abs_amount"] = unknown_df["amount"].apply(self.__get_abs_amount)
+            unknown_df["norm_asset"] = unknown_df["asset"].apply(self.__normalize_currency_abbreviation)
+            unknown_nondups = unknown_df.groupby(["abs_amount", "norm_asset"], as_index=False).agg({'txid':'first', 'refid':'count'})
+            unknown_nondups = unknown_nondups[unknown_nondups["refid"] < 2]
+            unknown_nondups = list(unknown_nondups["txid"])
+
+            unknown_nondups_to_process = list(filter(lambda item: item["txid"] in unknown_nondups, raw_ledger))
+            for entry in unknown_nondups_to_process:
+                entry["refid"] = entry["txid"]
+                refid = entry["refid"]
+
+                if refid not in transactions:
+                    transactions[refid] = {}
+                    transactions[refid]["raw"] = []
+                    transactions[refid]["types"] = []
+                    transactions[refid]["meta"] = {}
+
+                    transactions[refid]["raw"].append(entry)
+                    transactions[refid]["types"].append(etype)
+                    transactions[refid]["meta"]["parsing_info"] = "nondup"
+                else:
+                    pass  # It is enough to add these once, as they are the same entry twice
+
+        def dupfilter(item):
+            return item["refid"] not in refid_dups and item["refid"] != "Unknown"
+        
+        nondups_to_process = list(filter(dupfilter, raw_ledger))
         for entry in nondups_to_process:
             refid = entry["refid"]
             etype = entry["type"]
@@ -755,7 +804,7 @@ class LedgerProcessor:
             if refid in self._refids_to_ignore:
                 continue
 
-            found_matching_transactions = False
+            found_matching_transactions = refid in unknown_nondups
 
             for other_entry in nondups_to_process:
                 other_refid = other_entry["refid"]
@@ -796,6 +845,7 @@ class LedgerProcessor:
                     transactions[new_key]["meta"]["parsing_info"] = "dup_asset_amount_match"
                 
             if not found_matching_transactions:
+
                 if refid not in transactions:
                     transactions[refid] = {}
                     transactions[refid]["raw"] = []

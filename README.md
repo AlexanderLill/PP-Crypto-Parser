@@ -87,5 +87,5 @@ python cli.py -fc 'EUR' -o './output/' -v './input/Alle_historischen_Kurse.csv' 
 
 ### transactions_special_depot.csv
 ![](./doc/depot_transactions_special.png)
-And do not forget to check the following box to import staking rewards as "deposits":
+And do not forget to check the following box to import staking rewards and crypto deposits as "deposits" instead of as buy:
 ![](./doc/depot_transactions_special2.png)
