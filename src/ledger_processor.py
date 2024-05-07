@@ -668,6 +668,9 @@ class LedgerProcessor:
             if self.__is_staking_transfer(transaction):
                 print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
                 return [], []
+            else:
+                self.__print_transaction_debug_info(f"Can't process unknown case [NDT] ({parsing_info}, {transaction_types})", transaction)
+                return [], []
         elif parsing_info == "dup" and transaction_types == {"transfer", "withdrawal"}:
             if self.__is_staking_transfer(transaction):
                 print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
