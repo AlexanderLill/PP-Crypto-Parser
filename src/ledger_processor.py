@@ -639,7 +639,10 @@ class LedgerProcessor:
                 subtype == "spottostaking" or \
                 subtype == "stakingfromspot" or \
                 subtype == "stakingtospot" or \
-                subtype == "spotfromstaking":
+                subtype == "spotfromstaking" or \
+                subtype == "allocation" or \
+                subtype == "deallocation" or \
+                subtype == "migration":
                 return True
         return False
 
@@ -684,6 +687,13 @@ class LedgerProcessor:
                 return [], []
             else:
                 self.__print_transaction_debug_info(f"Can't process unknown case [DDT-NS] ({parsing_info}, {transaction_types}): ", transaction)
+                return [], []
+        elif parsing_info == "dup" and transaction_types == {"earn"}:
+            if self.__is_staking_transfer(transaction):
+                print(f"Ignoring staking transfer... ({parsing_info}, {transaction_types})")
+                return [], []
+            else:
+                self.__print_transaction_debug_info(f"Can't process unknown case [DE-NS] ({parsing_info}, {transaction_types}): ", transaction)
                 return [], []
         elif parsing_info == "nondup" and transaction_types == {"withdrawal"}:
             return self._process_fiat_withdrawal(transaction_id, transaction)
